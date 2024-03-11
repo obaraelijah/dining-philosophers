@@ -65,11 +65,47 @@ static PHILOSOPHERS: &[&str] = &["Socrates", "Plato", "Aristotle", "Thales", "Py
 
 fn main() {
     // Create forks
+    let mut forks = (0..PHILOSOPHERS.len())
+        .map(|_| Arc::new(Mutex::new(Fork)))
+        .collect::<Vec<_>>();
 
+    // clone the first fork to the last position is done to ensure that the last philosopher can access the first fork. 
+    forks.push(forks[0].clone());
+
+    let (tx, rx) = mpsc::channel();
     // Create philosophers
+    let philosophers: Vec<_> = PHILOSOPHERS
+        .iter()
+        .zip(forks.windows(2))
+        .enumerate()
+        .map(|(i, (name, pair))| {
+            let philosopher = Philosopher {
+                name: name.to_string(),
+                indent: i * 30,
+                left_fork: pair[0].clone(),
+                right_fork: pair[1].clone(),
+                thoughts: tx.clone(),
+            };
+            philosopher
+        })
+        .collect();
 
     // Make each of them think and eat 100 times
+    thread::scope(|s| {
+        for p in philosophers {
+            s.spawn(move || {
+                for _ in 0..100 {
+                    // make the philosopher think
+                    p.think();
+                    // make the philosopher eat
+                    p.eat();
+                }
+            });
+        }
+    });
+    tx.send("Done".to_string()).unwrap();
 
+    println!("Number of forks: {}", forks.len() - 1);
     // Output their thoughts
 }
 
