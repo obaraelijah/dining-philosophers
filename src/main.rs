@@ -106,7 +106,18 @@ fn main() {
     tx.send("Done".to_string()).unwrap();
 
     println!("Number of forks: {}", forks.len() - 1);
-    // Output their thoughts
+
+    if std::env::args().any(|arg| arg == "--thoughts") {
+         // Output their thoughts
+        use std::io::Write;
+        loop {
+            let thought = rx.recv().unwrap();
+            if thought == "Done" {
+                break;
+            }
+            std::io::stdout().write_all(thought.as_bytes()).unwrap();
+        }
+    }
 }
 
 // Utility function to sleep for a random amount of time
