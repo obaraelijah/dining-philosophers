@@ -27,37 +27,54 @@ impl Philosopher {
     }
 
     fn eat(&self) {
-        let _locks = loop {
-            self.print("trying to get both forks...");
-            let r1 = self.left_fork.try_lock();
-            if r1.is_ok() {
-                self.print("got left fork!");
-            }
-            random_sleep(1, 100);
-            let r2 = self.right_fork.try_lock();
-            if r2.is_ok() {
-                self.print("got right fork!");
-            }
-            if r1.is_ok()  && r2.is_ok() {
-                self.print("got both forks!");
-                break (r1.unwrap(), r2.unwrap());
-            } else {
+        let max_retries = 3;
+        let  retries = 0;
+    
+        while retries < max_retries {
+            let _locks = loop {
+                self.print("trying to get both forks...");
+                let r1 = self.left_fork.try_lock();
                 if r1.is_ok() {
-                    self.print("can't get right fork, returning left fork");
+                    self.print("got left fork!");
                 }
+                random_sleep(1, 100);
+                let r2 = self.right_fork.try_lock();
                 if r2.is_ok() {
-                    self.print("can't get left fork, returning right fork");
+                    self.print("got right fork!");
                 }
-                // releasing  locks that were acquired
-                drop(r1);
-                drop(r2);
-            }
-            random_sleep(1, 1000)
-        };
-        self.print("is eating...");
-        random_sleep(10, 30);
-        self.print("is returning forks...")
+                if r1.is_ok() && r2.is_ok() {
+                    self.print("got both forks!");
+                    break (r1.unwrap(), r2.unwrap());
+                } else {
+                    if r1.is_ok() {
+                        self.print("can't get right fork, returning left fork");
+                        drop(r1);
+                        // Wait for a short period before trying again
+                        thread::sleep(Duration::from_millis(10));
+                    }
+                    if r2.is_ok() {
+                        self.print("can't get left fork, returning right fork");
+                        drop(r2);
+                        // Wait for a short period before trying again
+                        thread::sleep(Duration::from_millis(10));
+                    }
+                }
+                random_sleep(1, 1000);
+            };
+    
+            self.print("is eating...");
+            random_sleep(10, 30);
+            self.print("is returning forks...");
+    
+            break; 
+        }
+    
+        if retries == max_retries {
+            self.print("giving up on eating for now...");
+        }
     }
+    
+    
 }
 
 static PHILOSOPHERS: &[&str] = &["Socrates", "Plato", "Aristotle", "Thales", "Pythagoras"];
