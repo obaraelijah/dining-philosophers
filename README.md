@@ -1,5 +1,4 @@
 # Dining Philosophers
-===================
 
 I played around with the "Dining Philosophers" concurrency exercise from the Comprehensive Rust course.
 
